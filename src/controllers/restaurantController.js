@@ -43,14 +43,22 @@ const buildSearchFilter = (query, userId) => {
   return filter;
 };
 
-// Mettre à jour la fonction getRestaurants pour inclure recherche et pagination
+// Mettre à jour la fonction getRestaurants pour retirer la vérification d'utilisateur
 exports.getRestaurants = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = buildSearchFilter(req.query, req.user._id);
+    const filter = req.query.search
+      ? {
+          $or: [
+            { nom: { $regex: req.query.search, $options: "i" } },
+            { cuisine: { $regex: req.query.search, $options: "i" } },
+            { "adresse.ville": { $regex: req.query.search, $options: "i" } },
+          ],
+        }
+      : {};
 
     const [restaurants, total] = await Promise.all([
       Restaurant.find(filter)
@@ -74,13 +82,10 @@ exports.getRestaurants = async (req, res) => {
   }
 };
 
-// Obtenir un restaurant spécifique
+// Mettre à jour getRestaurant pour retirer la vérification d'utilisateur
 exports.getRestaurant = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findOne({
-      _id: req.params.id,
-      userId: req.user._id,
-    });
+    const restaurant = await Restaurant.findById(req.params.id);
 
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant non trouvé" });
