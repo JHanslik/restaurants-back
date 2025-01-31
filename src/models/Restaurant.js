@@ -30,13 +30,7 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    note: {
-      type: Number,
-      min: [0, "La note minimale est 0"],
-      max: [5, "La note maximale est 5"],
-      default: 0,
-    },
-    commentaire: {
+    description: {
       type: String,
       trim: true,
     },
@@ -87,10 +81,13 @@ const restaurantSchema = new mongoose.Schema(
 
 // Middleware pour calculer la note moyenne
 restaurantSchema.pre("save", function (next) {
-  if (this.avis.length > 0) {
+  if (this.avis && this.avis.length > 0) {
     const sommeNotes = this.avis.reduce((acc, avis) => acc + avis.note, 0);
-    this.noteMoyenne = sommeNotes / this.avis.length;
+    this.noteMoyenne = parseFloat((sommeNotes / this.avis.length).toFixed(1));
     this.nombreAvis = this.avis.length;
+  } else {
+    this.noteMoyenne = 0;
+    this.nombreAvis = 0;
   }
   next();
 });
